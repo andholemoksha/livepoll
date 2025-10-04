@@ -1,0 +1,19 @@
+{
+  "name": "livepoll-backend",
+  "version": "1.0.0",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andholemoksha/livepoll.git"
+  },
+  "license": "ISC",
+  "author": "moksha andhole",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
