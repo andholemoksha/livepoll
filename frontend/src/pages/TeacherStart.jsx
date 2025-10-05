@@ -38,7 +38,6 @@ function TeacherStart() {
   };
 
   const handleAskQuestion = () => {
-    console.log({ options });
     socket.emit("add-question", { question, options, timer });
     navigate("/teacher/poll");
   };

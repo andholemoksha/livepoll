@@ -63,34 +63,64 @@ io.on('connection', (socket) => {
   // ========================
   // Add Question
   // ========================
-  socket.on('add-question', ({ question, options, timer = 5 }) => {
+  socket.on("add-question", ({ question, options, timer = 5 }) => {
     const pollId = activePollId;
-    if (!pollId || !activePolls[pollId]) return socket.emit('error', 'No active poll');
+    if (!pollId || !activePolls[pollId]) return socket.emit("error", "No active poll");
 
     const poll = activePolls[pollId];
 
-    poll.questions.push({
-      question,
-      options: options.map(opt => ({ ...opt, voted: 0 })),
-      askedAt: Date.now(),
-      timer
-    });
+    // ✅ Stop any existing timer before starting a new one
+    if (poll.timerInterval) {
+      clearInterval(poll.timerInterval);
+      poll.timerInterval = null;
+    }
 
+    const newQuestion = {
+      question,
+      options: options.map((opt) => ({ ...opt, voted: 0 })),
+      askedAt: Date.now(),
+      timer,
+      votedBy: {},
+    };
+
+    poll.questions.push(newQuestion);
     poll.currentQuestionIndex += 1;
     poll.lastQuestionActive = true;
 
-    // Auto-end question after timer
+    const currentIndex = poll.currentQuestionIndex;
+
+    // ✅ Start the new timer interval
+    poll.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - newQuestion.askedAt) / 1000);
+      const timeLeft = Math.max(0, timer - elapsed);
+
+      io.to(pollId).emit("time-left", { timeLeft });
+
+      // Auto-stop if time runs out (in case setTimeout didn’t trigger yet)
+      if (timeLeft <= 0) {
+        clearInterval(poll.timerInterval);
+        poll.timerInterval = null;
+      }
+    }, 1000);
+
+    // ✅ Auto-end question after timer expires
     setTimeout(() => {
+      if (!poll.lastQuestionActive) return; // already ended by votes
       poll.lastQuestionActive = false;
-      io.to(pollId).emit('question-ended-time', poll.questions[poll.currentQuestionIndex]);
-      console.log(`question ended`);
+
+      if (poll.timerInterval) {
+        clearInterval(poll.timerInterval);
+        poll.timerInterval = null;
+      }
+
+      io.to(pollId).emit("question-ended-time", poll.questions[currentIndex]);
+      console.log("⏰ Question ended by time");
     }, timer * 1000);
 
-    const sanitizedOptions = options.map(opt => ({ text: opt.text }));
-    console.log(sanitizedOptions);
-    io.to(pollId).emit('new-question', { question, options: sanitizedOptions, timer });
+    const sanitizedOptions = options.map((opt) => ({ text: opt.text }));
+    io.to(pollId).emit("new-question", { question, options: sanitizedOptions, timer });
 
-    // console.log(`Question added to poll ${pollId}:`, question);
+    console.log(`✅ New question added to poll ${pollId}:`, question);
   });
 
   // ========================
@@ -138,28 +168,36 @@ io.on('connection', (socket) => {
     question.votedBy[socket.id] = true;
 
     const totalVotes = Object.keys(question.votedBy).length;
-    io.to(pollId).emit(
-      "vote-update",
-      {
-        options: question.options.map((opt) => ({
-          id: opt.id,
-          text: opt.text,
-          voted: opt.voted || 0,
-          percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0
-        }))
-      }
-    );
-    // Check if all students have voted
+    io.to(pollId).emit("vote-update", {
+      options: question.options.map((opt) => ({
+        id: opt.id,
+        text: opt.text,
+        voted: opt.voted || 0,
+        percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0,
+      })),
+    });
+
+    // Check if all students voted
     const allVoted = Object.keys(poll.students || {}).every(
-      studentId => question.votedBy[studentId]
+      (studentId) => question.votedBy[studentId]
     );
-    console.log("no of students" + Object.keys(poll.students || {}).length);
-    console.log("all voted" + allVoted);
+
+    console.log("Number of students:", Object.keys(poll.students || {}).length);
+    console.log("All voted:", allVoted);
+
     if (allVoted) {
       poll.lastQuestionActive = false;
-      io.to(pollId).emit('question-ended-voted', poll.questions[poll.currentQuestionIndex]);
+
+      // ✅ Clear the running timer interval
+      if (poll.timerInterval) {
+        clearInterval(poll.timerInterval);
+        poll.timerInterval = null;
+      }
+
+      io.to(pollId).emit("question-ended-voted", poll.questions[poll.currentQuestionIndex]);
     }
   });
+
 
   // ========================
   // Chat Message
