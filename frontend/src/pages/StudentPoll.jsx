@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Button from "../components/Button";
 import Poll from "../model/Poll";
 import { useSocket } from "../server/useSocket";
+import { useNavigate } from "react-router-dom";
 import TabPanel from "../components/TabPanel";
 import ChatBox from "../components/ChatBox";
 import ParticipantsList from "../components/ParticipantsList";
@@ -16,7 +17,7 @@ export default function StudentPoll() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [active, setActive] = useState(false);
-
+  const navigate = useNavigate();
   const [pollQuestion, setPollQuestion] = useState({
     question: "",
     options: null,
@@ -49,11 +50,16 @@ export default function StudentPoll() {
       console.log("🔴 Question ended (voted):", question);
       setActive(false);
     };
+    const handleKicked = ({ message }) => {
+      console.log("🔴 Kicked:", message);
+      navigate("/student/kicked"); // Redirect to home or login page
+    };
 
     socket.on("new-question", handleNewQuestion);
     socket.on("vote-update", handleVoteUpdate);
     socket.on("question-ended-time", handleQuestionEndedTime);
     socket.on("question-ended-voted", handleQuestionEndedVoted);
+    socket.on("kicked", handleKicked);
 
     // Cleanup listeners on unmount
     return () => {
@@ -61,6 +67,7 @@ export default function StudentPoll() {
       socket.off("vote-update", handleVoteUpdate);
       socket.off("question-ended-time", handleQuestionEndedTime);
       socket.off("question-ended-voted", handleQuestionEndedVoted);
+      socket.off("kicked", handleKicked);
     };
   }, [socket]);
 
@@ -95,9 +102,7 @@ export default function StudentPoll() {
             readOnly={submitted}
           />
 
-          {!submitted && (
-            <Button text="Submit" onClick={handleSubmit} />
-          )}
+          {!submitted && <Button text="Submit" onClick={handleSubmit} />}
         </div>
       ) : (
         <h2 className="text-lg font-semibold text-gray-700">

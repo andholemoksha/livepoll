@@ -18,16 +18,8 @@ export default function TeacherPoll() {
         { user: "User2", text: "Nothing bro, just chill.", side: "right" },
     ];
 
-    // const participants = [
-    //     { name: "Rahul Arora" },
-    //     { name: "Pushpdeep Rawat" },
-    //     { name: "Rajit Zuyani" },
-    //     { name: "Nazdeen M" },
-    //     { name: "Ashwin Sharma" },
-    // ];
-
     const handleKick = (id) => {
-        alert(`Kicked out ${name}`);
+        console.log(`Kicked out ${id}`);
         socket.emit("kick-student", {studentId: id});
     };
     const socket = useSocket();

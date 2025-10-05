@@ -143,13 +143,13 @@ io.on('connection', (socket) => {
       socket.emit('new-question', { question, options: sanitizedOptions, timer: Math.floor(60 - ((Date.now() - askedAt) / 1000)) });
     }
     const students = Object.entries(activePolls[activePollId]?.students || {}).map(
-        ([id, student]) => ({
-          id,
-          name: student.name,
-        })
-      );
-      console.log(students);
-      io.to(pollId).emit('participants', { students });
+      ([id, student]) => ({
+        id,
+        name: student.name,
+      })
+    );
+    console.log(students);
+    io.to(pollId).emit('participants', { students });
     console.log(`Student ${name} joined poll ${pollId}`);
   });
 
@@ -222,18 +222,23 @@ io.on('connection', (socket) => {
   socket.on('kick-student', ({ studentId }) => {
 
     //if (studentId in activePolls[activePollId].students) {
-      //io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
-      delete activePollStudents[studentId];
-      const targetSocket = io.sockets.sockets.get(studentId);
-      if (targetSocket) targetSocket.leave(activePollId);
-      const students = Object.entries(activePolls[activePollId]?.students || {}).map(
-        ([id, student]) => ({
-          id,
-          name: student.name,
-        })
-      );
-      console.log(students);
-      io.to(activePollId).emit('participants', { students });
+    //io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
+    delete activePollStudents[studentId];
+    const targetSocket = io.sockets.sockets.get(studentId);
+
+    if (targetSocket) {
+      targetSocket.emit('kicked', {message: 'You have been kicked out of the poll'});
+      targetSocket.leave(activePollId); 
+    }
+    delete activePolls[activePollId]?.students[studentId];
+    const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+      ([id, student]) => ({
+        id,
+        name: student.name,
+      })
+    );
+    console.log(students);
+    io.to(activePollId).emit('participants', { students });
     //}
   });
 
