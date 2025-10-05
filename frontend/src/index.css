@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@theme {
+    --color-*: initial;
+    --color-tpurple: #7765DA;
+    --color-tlblue: #5767D0;
+    --color-tdblue: #4F0DCE;
+    --color-twhite: #F2F2F2;
+    --color-tdark: #373737;
+    --color-tgray: #6E6E6E;
+}

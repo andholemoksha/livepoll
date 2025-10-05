@@ -1,7 +1,8 @@
-export default function Badge(){
-    return(
-        <span className="px-4 py-1 mb-6 text-sm font-medium text-white bg-indigo-600 rounded-full">
-            ✦ Intervue Poll
-        </span>
+export default function Badge() {
+    return (
+        <div className="flex gap-[7px] px-4 py-1 mb-10 font-semibold text-white bg-gradient-to-r from-[#7565D9] to-[#4D0ACD] rounded-3xl *:text-sm">
+            <span>✦</span>
+            <span>Intervue Poll</span>
+        </div>
     )
 }
