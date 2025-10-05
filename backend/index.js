@@ -17,28 +17,6 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(cors());
 
-const POLL_FILE = './polls.json';
-
-// ----------------------
-// Helper Functions
-// ----------------------
-const readPolls = () => {
-  if (!fs.existsSync(POLL_FILE)) fs.writeFileSync(POLL_FILE, '{}');
-  return JSON.parse(fs.readFileSync(POLL_FILE));
-};
-
-const savePolls = (data) => fs.writeFileSync(POLL_FILE, JSON.stringify(data, null, 2));
-
-function saveHistory(pollId) {
-  const polls = readPolls();
-  const poll = activePolls[pollId];
-  if (!poll) return;
-
-  polls[pollId] = poll.questions;
-  savePolls(polls);
-  console.log(`Poll ${pollId} saved to history.`);
-}
-
 // ----------------------
 // In-Memory Structures
 // ----------------------
@@ -61,7 +39,6 @@ io.on('connection', (socket) => {
     // If there’s an existing poll, close it first
     if (activePollId && activePolls[activePollId]) {
       console.log(`Closing previous poll ${activePollId}`);
-      saveHistory(activePollId);
       delete activePolls[activePollId];
     }
 
@@ -105,7 +82,7 @@ io.on('connection', (socket) => {
     // Auto-end question after timer
     setTimeout(() => {
       poll.lastQuestionActive = false;
-      io.to(pollId).emit('question-ended', poll.questions[poll.currentQuestionIndex]);
+      io.to(pollId).emit('question-ended-time', poll.questions[poll.currentQuestionIndex]);
       console.log(`question ended`);
     }, timer * 1000);
 
@@ -161,7 +138,6 @@ io.on('connection', (socket) => {
     question.votedBy[socket.id] = true;
 
     const totalVotes = Object.keys(question.votedBy).length;
-    
     io.to(pollId).emit(
       "vote-update",
       {
@@ -177,10 +153,11 @@ io.on('connection', (socket) => {
     const allVoted = Object.keys(poll.students || {}).every(
       studentId => question.votedBy[studentId]
     );
-
+    console.log("no of students" + Object.keys(poll.students || {}).length);
+    console.log("all voted" + allVoted);
     if (allVoted) {
       poll.lastQuestionActive = false;
-      io.to(pollId).emit('question-ended', poll.questions[poll.currentQuestionIndex]);
+      io.to(pollId).emit('question-ended-voted', poll.questions[poll.currentQuestionIndex]);
     }
   });
 
@@ -214,7 +191,6 @@ io.on('connection', (socket) => {
     }
   });
 
-
   // ========================
   // participants
   // ========================
@@ -233,8 +209,17 @@ io.on('connection', (socket) => {
   // Teacher Disconnect
   // ========================
   socket.on('history', () => {
-    socket.emit('history', activePolls[activePollId]?.questions || []);
-    console.log(activePolls[activePollId]?.questions)
+    const questions = activePolls[activePollId]?.questions;
+    questions.forEach(q => {
+      const totalVotes = Object.keys(q.votedBy || {}).length;
+      q.options = q.options.map(opt => ({
+        text: opt.text,
+        voted: opt.voted || 0,
+        percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0
+      }));
+    });
+    socket.emit('history', questions || []);
+    console.log(questions)
   });
 
   // ========================
@@ -244,7 +229,6 @@ io.on('connection', (socket) => {
     const pollId = activePollTeachers[socket.id];
     if (pollId && activePolls[pollId]) {
       console.log(`Teacher disconnected. Ending poll ${pollId}`);
-      saveHistory(pollId);
       delete activePolls[pollId];
       activePollId = '';
       io.to(pollId).emit('poll-ended');

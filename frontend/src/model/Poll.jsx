@@ -33,6 +33,7 @@ export default function Poll({
       <div className="flex justify-between">
       <h2 className="font-semibold mb-2 text-gray-800">Question</h2>
       {remainingTime > 0 ? (
+      {timer && (remainingTime > 0 ? (
         <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">
           ⏱ {remainingTime}s
         </span>
@@ -40,6 +41,7 @@ export default function Poll({
         <span className="text-sm bg-red-600 text-white px-2 py-1 rounded">
           ⏳ Time’s up
         </span>
+      ))}
       )}
       </div>
       <div className="bg-gray-700 text-white px-3 py-2 rounded-t mt-3">

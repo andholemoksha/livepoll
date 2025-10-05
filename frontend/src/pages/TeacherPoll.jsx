@@ -40,22 +40,30 @@ export default function TeacherPoll() {
 
     const [active, setActive] = useState(false);
 
-    socket.on("new-question", ({ question, options, timer }) => {
-        console.log(
-            "Received new question:",
-            JSON.stringify({ question, options, timer })
-        );
-        setPollQuestion({ question, options, timer });
-        setActive(true);
-    });
-    socket.on("vote-update", ({ options }) => {
-        console.log("Vote update received:", options);
-        setPollQuestion((prev) => ({ ...prev, options }));
-    });
-    socket.on("question-ended", ({ question }) => {
-        console.log("Question ended:", question);
-        setActive(false);
-    });
+  socket.on("new-question", ({ question, options, timer }) => {
+    console.log(
+      "Received new question:",
+      JSON.stringify({ question, options, timer })
+    );
+    setPollQuestion({ question, options, timer });
+    setActive(true);
+  });
+  socket.on("vote-update", ({ options }) => {
+    console.log("Vote update received:", options);
+    setPollQuestion((prev) => ({ ...prev, options }));
+  });
+  socket.on("question-ended-time", ({ question }) => {
+    console.log("Question ended:", question);
+    setActive(false);
+  });
+  socket.on("question-ended-voted", ({ question }) => {
+    console.log("Question ended:", question);
+    setActive(false);
+  });
+
+  socket.on("history", (history) => {
+    console.log(history);
+  });
 
     const askNewQuestion = () => {
         !active && navigate("/teacher");
@@ -65,21 +73,21 @@ export default function TeacherPoll() {
         console.log("Hisory");
     }
 
-    return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
-            {/* View Poll History button at top-right */}
-            <div className="absolute top-4 right-4">
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
+      {/* View Poll History button at top-right */}
+      <div className="absolute top-4 right-4">
                 <Button text = "View Poll History" onClick = {handleHistory}></Button>
             </div>
 
-            {/* Centered Poll */}
+      {/* Centered Poll */}
 
-            <Poll
-                question={pollQuestion.question}
-                options={pollQuestion.options}
-                timer={pollQuestion.timer}
-                readOnly={true}
-            />
+      <Poll
+        question={pollQuestion.question}
+        options={pollQuestion.options}
+        timer={pollQuestion.timer}
+        readOnly={true}
+      />
 
             {/* Add New Question button just below poll, aligned right */}
             <div className="w-full max-w-md flex justify-end mt-4">
