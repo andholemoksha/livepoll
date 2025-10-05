@@ -183,6 +183,59 @@ io.on('connection', (socket) => {
   });
 
   // ========================
+  // Chat Message
+  // ========================
+  socket.on('chat-message', ({ message }) => {
+    if (!activePollId || !activePolls[activePollId]) return socket.emit('error', 'Poll not found');
+
+    io.to(activePollId).emit('chat-message', { message, sender: activePolls[activePollId].students[socket.id]?.name || 'Teacher' });
+  });
+
+  // ========================
+  // Teacher Kickout any student
+  // ========================
+  socket.on('kick-student', ({ studentId }) => {
+
+    if (studentId in activePolls[activePollId].students) {
+      io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
+      delete activePollStudents[studentId];
+      const targetSocket = io.sockets.sockets.get(targetSocketId);
+      if (targetSocket) targetSocket.leave(activePollId);
+      const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+        ([id, student]) => ({
+          id,
+          name: student.name,
+        })
+      );
+      console.log(students);
+      socket.emit('participants', { students });
+    }
+  });
+
+
+  // ========================
+  // participants
+  // ========================
+  socket.on('get-participants', () => {
+    const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+      ([id, student]) => ({
+        id,
+        name: student.name,
+      })
+    );
+    console.log(students);
+    socket.emit('participants', { students });
+  });
+
+  // ========================
+  // Teacher Disconnect
+  // ========================
+  socket.on('history', () => {
+    socket.emit('history', activePolls[activePollId]?.questions || []);
+    console.log(activePolls[activePollId]?.questions)
+  });
+
+  // ========================
   // Teacher Disconnect
   // ========================
   socket.on('disconnect', () => {
