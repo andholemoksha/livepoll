@@ -34,10 +34,10 @@ export default function RoleSelection() {
       <Badge></Badge>
 
       {/* Heading */}
-      <h1 className="text-2xl md:text-3xl font-semibold text-center">
-        Welcome to the <span className="font-bold">Live Polling System</span>
+      <h1 className="text-2xl md:text-[40px] font-normal text-center">
+        Welcome to the <span className="font-semibold">Live Polling System</span>
       </h1>
-      <p className="mt-2 text-gray-500 text-center max-w-md">
+          <p className="mt-2 text-[#00000080] text-[19px] text-center max-w-3xl font-normal">
         Please select the role that best describes you to begin using the live polling system
       </p>
 
