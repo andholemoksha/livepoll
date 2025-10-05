@@ -1,8 +1,8 @@
 // src/context/SocketContext.tsx
 import React, { createContext, useEffect } from "react";
-import socket from "../socket";
+import socket from "./socket";
 
-const SocketContext = createContext(socket);
+export const SocketContext = createContext(socket);
 
 export const SocketProvider = ({ children }) => {
   useEffect(() => {

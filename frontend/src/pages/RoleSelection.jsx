@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import RoleCard from "../components/RoleCard";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../server/useSocket";
 
 export default function RoleSelection() {
   const [selectedRole, setSelectedRole] = useState("");
   const navigate = useNavigate();
+  const socket = useSocket();
 
   const handleContinue = () => {
     if (!selectedRole) {
@@ -15,6 +17,10 @@ export default function RoleSelection() {
     }
     console.log("Selected role:", selectedRole);
     if(selectedRole==="teacher"){
+        socket.emit("create-poll", {});
+          socket.on("joined", ({pollId})=>{
+            console.log(pollId);
+          }); 
         navigate("/teacher")
     }
     else if(selectedRole==="student"){

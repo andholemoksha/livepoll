@@ -4,12 +4,16 @@ import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
 
 export default function StudentStart() {
-    const [name, setName] = useState("");
-    const navigate = useNavigate();
-    const handleContinue = ()=>{
-        console.log(name);
-        navigate("/student/poll");
-    };
+  const [name, setName] = useState("");
+  const navigate = useNavigate();
+  const handleContinue = () => {
+    console.log(name);
+    socket.emit("join-poll", {});
+    socket.on("joined", ({ pollId }) => {
+      console.log(pollId);
+    });
+    navigate("/student/poll");
+  };
 
   return (
     <div className="flex flex-col items-center justify-center bg-white px-4 w-full">
@@ -35,8 +39,8 @@ export default function StudentStart() {
 
       {/* Continue Button */}
       <Button
-      text = "Continue"
-      onClick = {()=>handleContinue()}
+        text="Continue"
+        onClick={() => handleContinue()}
       ></Button>
     </div>
   );

@@ -1,19 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import QuestionBox from "../components/QuestionBox";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import OptionBox from "../components/OptionBox";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../server/useSocket";
 
 
 function TeacherStart() {
-    const navigate = useNavigate();
-    const socket = useSocket();
-  
+  const navigate = useNavigate();
+  const socket = useSocket();
+
   const [options, setOptions] = useState([
     { id: 1, text: "", isCorrect: false },
     { id: 2, text: "", isCorrect: false },
   ]);
+
+  const [question,setQuestion] = useState("");
 
   const addOption = () => {
     setOptions([...options, { id: options.length + 1, text: "", isCorrect: false }]);
@@ -29,6 +32,7 @@ function TeacherStart() {
 
   const handleAskQuestion = () => {
     console.log({ options });
+    socket.emit("add-question", {question, options, })
     navigate("/teacher/poll");
   };
 
@@ -44,17 +48,17 @@ function TeacherStart() {
         </div>
 
         <div className="flex items-center justify-between w-full max-w-sm p-2">
-        {/* Left text */}
-        <span className="text-gray-800">Enter your question</span>
+          {/* Left text */}
+          <span className="text-gray-800">Enter your question</span>
 
-        {/* Right dropdown */}
-        <select className="border border-gray-300 rounded px-2 py-1">
+          {/* Right dropdown */}
+          <select className="border border-gray-300 rounded px-2 py-1">
             <option value="option1">60 seconds</option>
             <option value="option2">30 seconds</option>
             <option value="option3">15 seconds</option>
-        </select>
+          </select>
         </div>
-        <QuestionBox maxLength={100} />
+        <QuestionBox maxLength={100} setQuestionParent = {setQuestion} />
 
         <div className="space-y-4">
           {options.map((option) => (
@@ -75,10 +79,10 @@ function TeacherStart() {
         </button>
 
         <div className="flex justify-end">
-            <Button
+          <Button
             text="Ask Question"
-            onClick= {()=>handleAskQuestion()}
-            ></Button>
+            onClick={() => handleAskQuestion()}
+          ></Button>
         </div>
       </div>
     </div>

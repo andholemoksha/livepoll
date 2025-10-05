@@ -1,15 +1,18 @@
+import { useEffect, useState } from "react";
 import Poll from "../model/Poll";
+import { useSocket } from "../server/useSocket";
 
 export default function App() {
-    const samplePoll = {
-        question: "Which planet is known as the Red Planet?",
-        options: [
-        { text: "Mars", percentage: 75 },
-        { text: "Venus", percentage: 5 },
-        { text: "Jupiter", percentage: 5 },
-        { text: "Saturn", percentage: 15 },
-        ],
-    };
+    const socket = useSocket();
+    const [samplePoll, setSamplePoll] = useState({});
+    useEffect(()=>{
+        socket.on("new-question",({question, options, timer})=>{
+            setSamplePoll({question, options, timer})
+        })
+        socket.on("vote-update", ({options})=>{
+            setSamplePoll((initial)=>{initial.question, options })
+        })
+    },[])
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
@@ -19,7 +22,7 @@ export default function App() {
         </button>
 
         {/* Centered Poll */}
-        <Poll question={samplePoll.question} options={samplePoll.options} />
+        {samplePoll.options ?? <Poll question={samplePoll.question} options={samplePoll.options} />}
 
         {/* Add New Question button just below poll, aligned right */}
         <div className="w-full max-w-md flex justify-end mt-4">

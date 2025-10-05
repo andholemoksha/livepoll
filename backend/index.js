@@ -109,7 +109,7 @@ io.on('connection', (socket) => {
     }, timer * 1000);
 
     const sanitizedOptions = options.map(opt => ({ value: opt.value }));
-    io.to(pollId).emit('new-question', { question, options: sanitizedOptions });
+    io.to(pollId).emit('new-question', { question, options: sanitizedOptions, timer });
 
     console.log(`Question added to poll ${pollId}:`, question);
   });
