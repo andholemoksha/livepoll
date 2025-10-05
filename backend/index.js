@@ -142,6 +142,14 @@ io.on('connection', (socket) => {
       // console.log(sanitizedOptions);
       socket.emit('new-question', { question, options: sanitizedOptions, timer: Math.floor(60 - ((Date.now() - askedAt) / 1000)) });
     }
+    const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+        ([id, student]) => ({
+          id,
+          name: student.name,
+        })
+      );
+      console.log(students);
+      io.to(pollId).emit('participants', { students });
     console.log(`Student ${name} joined poll ${pollId}`);
   });
 
@@ -213,10 +221,10 @@ io.on('connection', (socket) => {
   // ========================
   socket.on('kick-student', ({ studentId }) => {
 
-    if (studentId in activePolls[activePollId].students) {
-      io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
+    //if (studentId in activePolls[activePollId].students) {
+      //io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
       delete activePollStudents[studentId];
-      const targetSocket = io.sockets.sockets.get(targetSocketId);
+      const targetSocket = io.sockets.sockets.get(studentId);
       if (targetSocket) targetSocket.leave(activePollId);
       const students = Object.entries(activePolls[activePollId]?.students || {}).map(
         ([id, student]) => ({
@@ -225,8 +233,8 @@ io.on('connection', (socket) => {
         })
       );
       console.log(students);
-      socket.emit('participants', { students });
-    }
+      io.to(activePollId).emit('participants', { students });
+    //}
   });
 
   // ========================

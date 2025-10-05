@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 const ParticipantsList = ({
   participants,
   onKick,
@@ -18,7 +18,7 @@ const ParticipantsList = ({
               <td className="py-2">{p.name}</td>
               <td
                 className="py-2 text-right text-purple-600 cursor-pointer hover:underline"
-                onClick={() => onKick(p.name)}
+                onClick={() => onKick(p.id)}
               >
                 Kick out
               </td>

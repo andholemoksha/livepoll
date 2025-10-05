@@ -18,18 +18,20 @@ export default function TeacherPoll() {
         { user: "User2", text: "Nothing bro, just chill.", side: "right" },
     ];
 
-    const participants = [
-        { name: "Rahul Arora" },
-        { name: "Pushpdeep Rawat" },
-        { name: "Rajit Zuyani" },
-        { name: "Nazdeen M" },
-        { name: "Ashwin Sharma" },
-    ];
+    // const participants = [
+    //     { name: "Rahul Arora" },
+    //     { name: "Pushpdeep Rawat" },
+    //     { name: "Rajit Zuyani" },
+    //     { name: "Nazdeen M" },
+    //     { name: "Ashwin Sharma" },
+    // ];
 
-    const handleKick = (name) => {
+    const handleKick = (id) => {
         alert(`Kicked out ${name}`);
+        socket.emit("kick-student", {studentId: id});
     };
     const socket = useSocket();
+    
     const navigate = useNavigate();
 
     const [pollQuestion, setPollQuestion] = useState({
@@ -41,12 +43,14 @@ export default function TeacherPoll() {
     const [active, setActive] = useState(false);
     const [history, setHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [participants, setParticipants] = useState([]);
 
     const handleNewQuestion = ({ question, options, timer }) => {
         console.log("🟢 Received new question:", { question, options, timer });
         setPollQuestion({ question, options, timer });
         setActive(true);
         setShowHistory(false);
+        socket.emit("get-participants", {});
     };
     socket.on("new-question", handleNewQuestion);
     // ✅ Register all socket listeners safely inside one effect
@@ -69,11 +73,17 @@ export default function TeacherPoll() {
             setShowHistory(true);
         };
 
+        const handleParticipants = ({students})=>{
+            console.log("Participant List:", students);
+            setParticipants(students);
+        }
+
         // Register all events
         socket.on("vote-update", handleVoteUpdate);
         socket.on("question-ended-time", handleQuestionEnded);
         socket.on("question-ended-voted", handleQuestionEnded);
         socket.on("history", handleHistory);
+        socket.on("participants", handleParticipants);
 
         // Cleanup when component unmounts or socket changes
         return () => {
@@ -82,6 +92,7 @@ export default function TeacherPoll() {
             socket.off("question-ended-time", handleQuestionEnded);
             socket.off("question-ended-voted", handleQuestionEnded);
             socket.off("history", handleHistory);
+            socket.off("participants", handleParticipants);
         };
     }, [socket]);
 
@@ -184,7 +195,9 @@ export default function TeacherPoll() {
                     {activeTab === "Chat" ? (
                         <ChatBox messages={messages} />
                     ) : (
+                        
                         <ParticipantsList participants={participants} onKick={handleKick} />
+
                     )}
                 </div>
             )}
