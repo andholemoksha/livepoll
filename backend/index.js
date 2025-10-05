@@ -82,49 +82,49 @@ io.on('connection', (socket) => {
     activePolls[pollId].students[socket.id] = { name };
     activePollsStudents[socket.id] = pollId;
     socket.emit('joined', { pollId, name });
-    io.to(pollId).emit('student-joined', { name }); 
+    io.to(pollId).emit('student-joined', { name });
     console.log(`Student ${name} joined poll ${pollId}`);
   });
 
 
   socket.on("vote", ({ optionIndex }) => {
-  const pollId = activePollsStudents[socket.id];
-  if (!pollId || !activePolls[pollId]) return socket.emit('error', 'Poll not found');
+    const pollId = activePollsStudents[socket.id];
+    if (!pollId || !activePolls[pollId]) return socket.emit('error', 'Poll not found');
 
-  const poll = activePolls[pollId];
-  const question = poll.questions[poll.currentQuestionIndex];
+    const poll = activePolls[pollId];
+    const question = poll.questions[poll.currentQuestionIndex];
 
-  if (!poll.lastQuestionActive) return socket.emit('error', 'No active question');
-  if (optionIndex < 0 || optionIndex >= question.options.length) {
-    return socket.emit('error', 'Invalid option');
-  }
+    if (!poll.lastQuestionActive) return socket.emit('error', 'No active question');
+    if (optionIndex < 0 || optionIndex >= question.options.length) {
+      return socket.emit('error', 'Invalid option');
+    }
 
-  // Initialize votedBy map if it doesn't exist
-  if (!question.votedBy) question.votedBy = {};
+    // Initialize votedBy map if it doesn't exist
+    if (!question.votedBy) question.votedBy = {};
 
-  // Check if this socket has already voted
-  if (question.votedBy[socket.id]) {
-    return socket.emit('error', 'You have already voted for this question');
-  }
+    // Check if this socket has already voted
+    if (question.votedBy[socket.id]) {
+      return socket.emit('error', 'You have already voted for this question');
+    }
 
-  // Record the vote
-  question.options[optionIndex].voted += 1;
-  question.votedBy[socket.id] = true;
+    // Record the vote
+    question.options[optionIndex].voted += 1;
+    question.votedBy[socket.id] = true;
+    let totalVotes = Object.keys(question.votedBy).length;
+    // Send vote-update only to this student
+    socket.emit('vote-update', question.options.map(opt => ({ text: opt.value, percentage: opt.voted / totalVotes * 100 })));
 
-  // Send vote-update only to this student
-  socket.emit('vote-update', question.options.map(opt => ({ value: opt.value, voted: opt.voted })));
+    // Check if all students have voted
+    const allVoted = Object.keys(poll.students || {}).every(
+      studentId => question.votedBy[studentId]
+    );
 
-  // Check if all students have voted
-  const allVoted = Object.keys(poll.students || {}).every(
-    studentId => question.votedBy[studentId]
-  );
-
-  if (allVoted) {
-    // End question and broadcast to everyone
-    poll.lastQuestionActive = false;
-    io.to(pollId).emit('question-ended', question.options.map(opt => ({ value: opt.value, voted: opt.voted })));
-  }
-});
+    if (allVoted) {
+      // End question and broadcast to everyone
+      poll.lastQuestionActive = false;
+      io.to(pollId).emit('question-ended', question.options.map(opt => ({ value: opt.value, voted: opt.voted })));
+    }
+  });
 
 
   socket.onAny((event, data) => {

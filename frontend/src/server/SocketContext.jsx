@@ -1,5 +1,5 @@
 // src/context/SocketContext.tsx
-import React, { createContext, useContext, useEffect } from "react";
+import React, { createContext, useEffect } from "react";
 import socket from "../socket";
 
 const SocketContext = createContext(socket);
@@ -23,5 +23,3 @@ export const SocketProvider = ({ children }) => {
 
   return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
 };
-
-export const useSocket = () => useContext(SocketContext);
