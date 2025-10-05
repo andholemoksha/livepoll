@@ -1,53 +1,45 @@
 import { useState, useEffect } from "react";
 import Poll from "../model/Poll";
 import Button from "../components/Button"
-import { useNavigate } from "react-router-dom";
-import { useSocket } from "../server/useSocket";
 import ChatBox from "../components/ChatBox";
 import ParticipantsList from "../components/ParticipantsList";
 import TabPanel from "../components/TabPanel";
 import { MessageSquare } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
+import { useSocket } from "../server/useSocket";
 
 export default function TeacherPoll() {
-    const [activeTab, setActiveTab] = useState("Chat");
+  const socket = useSocket();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("Chat");
     const [showChatPanel, setShowChatPanel] = useState(false);
-
-    const messages = [
-        { user: "User1", text: "Hey there, how can I help?", side: "left" },
-        { user: "User2", text: "Nothing bro, just chill.", side: "right" },
-    ];
-
     const handleKick = (id) => {
         console.log(`Kicked out ${id}`);
         socket.emit("kick-student", {studentId: id});
     };
-    const socket = useSocket();
-    
-    const navigate = useNavigate();
 
     const [pollQuestion, setPollQuestion] = useState({
-        question: "",
+        question: "Waiting for question...", // Shows a default message
         options: [],
-        timer: 60,
+        timer: 0,
     });
 
-    const [active, setActive] = useState(false);
-    const [history, setHistory] = useState([]);
-    const [showHistory, setShowHistory] = useState(false);
-    const [participants, setParticipants] = useState([]);
+  const [active, setActive] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+      const [participants, setParticipants] = useState([]);
 
-    const handleNewQuestion = ({ question, options, timer }) => {
-        console.log("🟢 Received new question:", { question, options, timer });
-        setPollQuestion({ question, options, timer });
-        setActive(true);
-        setShowHistory(false);
-        socket.emit("get-participants", {});
-    };
-    socket.on("new-question", handleNewQuestion);
-    // ✅ Register all socket listeners safely inside one effect
-    useEffect(() => {
-        if (!socket) return; // wait until socket is ready
+  const handleNewQuestion = ({ question, options, timer }) => {
+    console.log("🟢 Received new question:", { question, options, timer });
+    setPollQuestion({ question, options, timer });
+    setActive(true);
+    setShowHistory(false);
+    socket.emit("get-participants", {});
+  };
+  socket.on("new-question", handleNewQuestion);
+  // ✅ Register all socket listeners safely inside one effect
+  useEffect(() => {
+    if (!socket) return; // wait until socket is ready
 
         const handleVoteUpdate = ({ options }) => {
             console.log("🗳️ Vote update:", options);
@@ -71,6 +63,7 @@ export default function TeacherPoll() {
         }
 
         // Register all events
+        socket.on("new-question", handleNewQuestion);
         socket.on("vote-update", handleVoteUpdate);
         socket.on("question-ended-time", handleQuestionEnded);
         socket.on("question-ended-voted", handleQuestionEnded);
@@ -98,42 +91,38 @@ export default function TeacherPoll() {
         if (socket) socket.emit("history", {});
     };
 
-    return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
-            {/* View Poll History button */}
-            <button
-                className="absolute top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 flex items-center gap-1"
-                onClick={fetchHistory}
-            >
-                <span>👁️</span> View Poll History
-            </button>
+  return (
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
+      {/* View Poll History button */}
+      <button
+        className="absolute top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 flex items-center gap-1"
+        onClick={fetchHistory}
+      >
+        <span>👁️</span> View Poll History
+      </button>
 
-            {/* Conditional rendering: current poll vs history */}
             {!showHistory ? (
-                <>
+                <div className="w-full max-w-xl">
+                    <h2 className="text-2xl font-bold mb-4 text-gray-800">Question</h2>
                     <Poll
                         question={pollQuestion.question}
                         options={pollQuestion.options}
                         timer={pollQuestion.timer}
                         readOnly={true}
                     />
-
-                    <div className="w-full max-w-md flex justify-end mt-4">
+                    <div className="mt-6 flex justify-end">
                         <button
-                            className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
                             onClick={askNewQuestion}
-                            disabled={active} // disable while active poll running
+                            disabled={active}
+                            className="px-6 py-2.5 text-white font-semibold rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            + Ask a New Question
+                            + Ask a new question
                         </button>
                     </div>
-                </>
+                </div>
             ) : (
+                // History View...
                 <div className="w-full max-w-2xl mt-16 space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-800 text-center mb-4">
-                        📜 Poll History
-                    </h2>
-
                     {history.length > 0 ? (
                         history.map((poll, index) => (
                             <Poll
