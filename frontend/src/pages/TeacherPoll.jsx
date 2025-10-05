@@ -8,7 +8,7 @@ export default function TeacherPoll() {
   const navigate = useNavigate();
   const [pollQuestion, setPollQuestion] = useState({
     question: "",
-    options: null,
+    options: [],
     timer: 60,
   });
 
@@ -23,6 +23,7 @@ export default function TeacherPoll() {
     setActive(true);
   });
   socket.on("vote-update", ({ options }) => {
+    console.log("Vote update received:", options);
     setPollQuestion((prev) => ({ ...prev, options }));
   });
   socket.on("question-ended", ({ question }) => {
@@ -42,17 +43,13 @@ export default function TeacherPoll() {
       </button>
 
       {/* Centered Poll */}
-      {active ? (
+      
         <Poll
           question={pollQuestion.question}
           options={pollQuestion.options}
           timer={pollQuestion.timer}
           readOnly={true}  
-          
         />
-      ) : (
-        <p>Waiting for question...</p>
-      )}
 
       {/* Add New Question button just below poll, aligned right */}
       <div className="w-full max-w-md flex justify-end mt-4">

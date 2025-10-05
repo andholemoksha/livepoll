@@ -161,13 +161,18 @@ io.on('connection', (socket) => {
     question.votedBy[socket.id] = true;
 
     const totalVotes = Object.keys(question.votedBy).length;
-
-    // Send update to all students
-    io.to(pollId).emit('vote-update', question.options.map(opt => ({
-      text: opt.text,
-      percentage: (opt.voted / totalVotes) * 100
-    })));
-
+    
+    io.to(pollId).emit(
+      "vote-update",
+      {
+        options: question.options.map((opt) => ({
+          id: opt.id,
+          text: opt.text,
+          voted: opt.voted || 0,
+          percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0
+        }))
+      }
+    );
     // Check if all students have voted
     const allVoted = Object.keys(poll.students || {}).every(
       studentId => question.votedBy[studentId]
@@ -175,10 +180,7 @@ io.on('connection', (socket) => {
 
     if (allVoted) {
       poll.lastQuestionActive = false;
-      io.to(pollId).emit('question-ended', question.options.map(opt => ({
-        text: opt.text,
-        voted: opt.voted
-      })));
+      io.to(pollId).emit('question-ended', poll.questions[poll.currentQuestionIndex]);
     }
   });
 

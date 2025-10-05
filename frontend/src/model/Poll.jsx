@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import PollOption from "../components/PollOption";
 
-export default function Poll({ question, options, timer, readOnly = false , setIndex}) {
+export default function Poll({
+  question,
+  options,
+  timer,
+  readOnly = false,
+  setIndex,
+}) {
   const [remainingTime, setRemainingTime] = useState(timer);
   const [selectedOption, setSelectedOption] = useState(null);
 
@@ -18,9 +24,9 @@ export default function Poll({ question, options, timer, readOnly = false , setI
     return () => clearInterval(interval);
   }, [remainingTime]);
 
-  useEffect(()=>{
-    if(!readOnly) setIndex(selectedOption);
-  },[selectedOption])
+  useEffect(() => {
+    if (!readOnly) setIndex(selectedOption);
+  }, [selectedOption]);
 
   return (
     <div className="max-w-md mx-auto mt-10 p-4 border rounded shadow bg-white">
@@ -40,12 +46,14 @@ export default function Poll({ question, options, timer, readOnly = false , setI
       <div className="mt-4">
         {options.map((option, index) => (
           <PollOption
-            key= {index}
-            number={index+1}
+            key={index}
+            number={index + 1}
             text={option.text}
-            percentage={option.percentage}
+            percentage={option.percentage ?? 0}
             selected={selectedOption === index}
-            onClick={() => !readOnly && setSelectedOption(index)}
+            onClick={() => {
+              if (!readOnly) setSelectedOption(index);
+            }}
             readOnly={readOnly} // disable in teacher mode
           />
         ))}
