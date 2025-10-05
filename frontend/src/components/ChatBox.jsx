@@ -26,7 +26,8 @@ const ChatBox = () => {
     setInput("");
   };
   useEffect(()=>{
-    socket.on("chat-message",handleMessage);
+    socket.on("chat-message", handleMessage);
+    return ()=> socket.off("chat-message", handleMessage);
   },[])
   const handleMessage = ({message,sender,senderId})=>{
     if(senderId !== socket.id){
