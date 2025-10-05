@@ -213,7 +213,7 @@ io.on('connection', (socket) => {
   socket.on('chat-message', ({ message }) => {
     if (!activePollId || !activePolls[activePollId]) return socket.emit('error', 'Poll not found');
 
-    io.to(activePollId).emit('chat-message', { message, sender: activePolls[activePollId].students[socket.id]?.name || 'Teacher' });
+    io.to(activePollId).emit('chat-message', { message, sender: activePolls[activePollId].students[socket.id]?.name || 'Teacher' ,senderId:socket.id});
   });
 
   // ========================

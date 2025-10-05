@@ -2,9 +2,16 @@ import { useState, useEffect } from "react";
 import Button from "../components/Button";
 import Poll from "../model/Poll";
 import { useSocket } from "../server/useSocket";
+import TabPanel from "../components/TabPanel";
+import ChatBox from "../components/ChatBox";
+import ParticipantsList from "../components/ParticipantsList";
+import { MessageSquare } from "lucide-react";
 
 export default function StudentPoll() {
   const socket = useSocket();
+
+  const [activeTab, setActiveTab] = useState("Chat");
+  const [showChatPanel, setShowChatPanel] = useState(false);
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -78,9 +85,9 @@ export default function StudentPoll() {
               submitted
                 ? pollQuestion.options // show with vote counts
                 : pollQuestion.options.map((opt) => ({
-                    text: opt.text,
-                    id: opt.id,
-                  }))
+                  text: opt.text,
+                  id: opt.id,
+                }))
             }
             timer={active ? pollQuestion.timer : null}
             setIndex={setSelectedOption}
@@ -102,6 +109,41 @@ export default function StudentPoll() {
         <h2 className="text-lg text-gray-700 mt-4">
           Waiting for the teacher to ask a new question.
         </h2>
+      )}
+      {/* Floating Chat Button */}
+      <button
+        onClick={() => setShowChatPanel(true)}
+        className="fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-105"
+      >
+        <MessageSquare size={22} />
+      </button>
+      {/* Chat/Participants Modal */}
+      {showChatPanel && (
+        <div className="fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-200 animate-slide-up">
+          {/* Header Tabs */}
+          <div className="flex justify-between items-center border-b border-gray-300">
+            <TabPanel
+              tabs={["Chat", "Participants"]}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
+            <button
+              className="text-gray-500 text-lg px-3 hover:text-gray-800"
+              onClick={() => setShowChatPanel(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === "Chat" ? (
+            <ChatBox />
+          ) : (
+
+            <ParticipantsList participants={participants} role="student" />
+
+          )}
+        </div>
       )}
     </div>
   );

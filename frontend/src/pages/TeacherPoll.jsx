@@ -193,7 +193,7 @@ export default function TeacherPoll() {
 
                     {/* Tab Content */}
                     {activeTab === "Chat" ? (
-                        <ChatBox messages={messages} />
+                        <ChatBox />
                     ) : (
                         
                         <ParticipantsList participants={participants} onKick={handleKick} />
