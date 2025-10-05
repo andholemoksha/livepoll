@@ -43,7 +43,13 @@ export default function TeacherPoll() {
 
       {/* Centered Poll */}
       {active ? (
-        <Poll question={pollQuestion.question} options={pollQuestion.options} timer={pollQuestion.timer} />
+        <Poll
+          question={pollQuestion.question}
+          options={pollQuestion.options}
+          timer={pollQuestion.timer}
+          readOnly={true}  
+          
+        />
       ) : (
         <p>Waiting for question...</p>
       )}

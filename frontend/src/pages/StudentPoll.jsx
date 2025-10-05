@@ -4,8 +4,14 @@ import Poll from "../model/Poll";
 import { useSocket } from "../server/useSocket";
 
 export default function StudentPoll() {
+  const [selectedOption, setSelectedOption] = useState(null);
   const handleSubmit = () => {
     console.log("Submit answer");
+    if (selectedOption === null) {
+      alert("Please select an answer before submitting!");
+      return;
+    }
+    socket.emit("vote", { optionIndex : selectedOption });
   };
   const [pollQuestion, setPollQuestion] = useState({
     question: "",
@@ -35,15 +41,18 @@ export default function StudentPoll() {
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
       {/* Centered Poll */}
       {pollQuestion.options ? (
-        <Poll
-          question={pollQuestion.question}
-          options={pollQuestion.options}
-          timer={pollQuestion.timer}
-        />
+        <div>
+          <Poll
+            question={pollQuestion.question}
+            options={pollQuestion.options}
+            timer={pollQuestion.timer}
+            setIndex = {setSelectedOption}
+          />
+          <Button text="Submit" onClick={handleSubmit}></Button>
+        </div>
       ) : (
         <p>Waiting for question...</p>
       )}{" "}
-      <Button text="Submit" onClick={() => handleSubmit}></Button>
     </div>
   );
 }

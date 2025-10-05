@@ -1,0 +1,150 @@
+{
+  "21f69850-d029-430a-8716-08fa34783e7b": [
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 0
+        }
+      ],
+      "askedAt": 1759666321995,
+      "timer": 60
+    }
+  ],
+  "98feeab7-f589-4f1b-9887-cff0e3100441": [
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 0
+        }
+      ],
+      "askedAt": 1759666345790,
+      "timer": 60
+    }
+  ],
+  "2c9a88c4-2160-44e9-b856-27c0ccc6a8dc": [
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 0
+        }
+      ],
+      "askedAt": 1759666472942,
+      "timer": 60
+    },
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 0
+        }
+      ],
+      "askedAt": 1759666627496,
+      "timer": 60
+    }
+  ],
+  "c6cbeeba-a854-4629-86af-723592c65ff2": [
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 0
+        }
+      ],
+      "askedAt": 1759667616328,
+      "timer": 60
+    }
+  ],
+  "88e10dcc-7505-427b-bbc7-c0edff319c06": [
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 0
+        }
+      ],
+      "askedAt": 1759667651912,
+      "timer": 60
+    }
+  ],
+  "aa9253af-0d32-4a37-9d06-bd3b91b7f6f9": [
+    {
+      "question": "who are you",
+      "options": [
+        {
+          "id": 1,
+          "text": "amiya",
+          "isCorrect": false,
+          "voted": 0
+        },
+        {
+          "id": 2,
+          "text": "moksha",
+          "isCorrect": true,
+          "voted": 1
+        }
+      ],
+      "askedAt": 1759667729944,
+      "timer": 60,
+      "votedBy": {
+        "MY_2YTd5goUk39WeAAAl": true
+      }
+    }
+  ]
+}
