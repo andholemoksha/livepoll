@@ -2,9 +2,11 @@ import { useState } from "react";
 import Button from "../components/Button";
 import Poll from "../model/Poll";
 import { useSocket } from "../server/useSocket";
+import { useNavigate } from "react-router-dom";
 
 export default function StudentPoll() {
   const [selectedOption, setSelectedOption] = useState(null);
+  const navigate = useNavigate();
   const handleSubmit = () => {
     console.log("Submit answer");
     if (selectedOption === null) {
@@ -12,6 +14,7 @@ export default function StudentPoll() {
       return;
     }
     socket.emit("vote", { optionIndex : selectedOption });
+    navigate("/student/poll/submit");
   };
   const [pollQuestion, setPollQuestion] = useState({
     question: "",
