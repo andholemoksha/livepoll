@@ -2,13 +2,15 @@ import { useState } from "react";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "../server/useSocket";
 
 export default function StudentStart() {
   const [name, setName] = useState("");
   const navigate = useNavigate();
+  const socket = useSocket();
   const handleContinue = () => {
     console.log(name);
-    socket.emit("join-poll", {});
+    socket.emit("join-poll", {name});
     socket.on("joined", ({ pollId }) => {
       console.log(pollId);
     });

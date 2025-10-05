@@ -1,38 +1,45 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import QuestionBox from "../components/QuestionBox";
 import Badge from "../components/Badge";
 import Button from "../components/Button";
 import OptionBox from "../components/OptionBox";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../server/useSocket";
-
+import TimerSelect from "../components/TimerSelect";
 
 function TeacherStart() {
   const navigate = useNavigate();
   const socket = useSocket();
 
+  const [question, setQuestion] = useState("who are you");
   const [options, setOptions] = useState([
-    { id: 1, text: "", isCorrect: false },
-    { id: 2, text: "", isCorrect: false },
+    { id: 1, text: "amiya", isCorrect: false },
+    { id: 2, text: "moksha", isCorrect: true },
   ]);
-
-  const [question,setQuestion] = useState("");
+  const [timer, setTimer] = useState(60);
 
   const addOption = () => {
-    setOptions([...options, { id: options.length + 1, text: "", isCorrect: false }]);
+    setOptions([
+      ...options,
+      { id: options.length + 1, text: "", isCorrect: false },
+    ]);
   };
 
   const updateOption = (id, newText) => {
-    setOptions(options.map(opt => (opt.id === id ? { ...opt, text: newText } : opt)));
+    setOptions(
+      options.map((opt) => (opt.id === id ? { ...opt, text: newText } : opt))
+    );
   };
 
   const toggleCorrect = (id, value) => {
-    setOptions(options.map(opt => (opt.id === id ? { ...opt, isCorrect: value } : opt)));
+    setOptions(
+      options.map((opt) => (opt.id === id ? { ...opt, isCorrect: value } : opt))
+    );
   };
 
   const handleAskQuestion = () => {
     console.log({ options });
-    socket.emit("add-question", {question, options, })
+    socket.emit("add-question", { question, options, timer });
     navigate("/teacher/poll");
   };
 
@@ -43,7 +50,8 @@ function TeacherStart() {
           <Badge></Badge>
           <h1 className="text-2xl font-bold mt-2">Let's Get Started</h1>
           <p className="text-gray-500 mt-1">
-            you’ll have the ability to create and manage polls, ask questions, and monitor your students' responses in real-time.
+            you’ll have the ability to create and manage polls, ask questions,
+            and monitor your students' responses in real-time.
           </p>
         </div>
 
@@ -52,13 +60,9 @@ function TeacherStart() {
           <span className="text-gray-800">Enter your question</span>
 
           {/* Right dropdown */}
-          <select className="border border-gray-300 rounded px-2 py-1">
-            <option value="option1">60 seconds</option>
-            <option value="option2">30 seconds</option>
-            <option value="option3">15 seconds</option>
-          </select>
+          <TimerSelect value={timer} onChange={setTimer} />
         </div>
-        <QuestionBox maxLength={100} setQuestionParent = {setQuestion} />
+        <QuestionBox maxLength={100} setQuestionParent={setQuestion} />
 
         <div className="space-y-4">
           {options.map((option) => (

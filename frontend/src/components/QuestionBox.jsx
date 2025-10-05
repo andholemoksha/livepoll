@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 const QuestionBox = ({ maxLength ,setQuestionParent}) => {
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState("who are you");
 
   return (
     <div>

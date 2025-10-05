@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
   // ========================
   // Add Question
   // ========================
-  socket.on('add-question', ({ question, options, timer = 60 }) => {
+  socket.on('add-question', ({ question, options, timer = 5 }) => {
     const pollId = activePollId;
     if (!pollId || !activePolls[pollId]) return socket.emit('error', 'No active poll');
 
@@ -106,12 +106,14 @@ io.on('connection', (socket) => {
     setTimeout(() => {
       poll.lastQuestionActive = false;
       io.to(pollId).emit('question-ended', poll.questions[poll.currentQuestionIndex]);
+      console.log(`question ended`);
     }, timer * 1000);
 
-    const sanitizedOptions = options.map(opt => ({ value: opt.value }));
+    const sanitizedOptions = options.map(opt => ({ text: opt.text }));
+    console.log(sanitizedOptions);
     io.to(pollId).emit('new-question', { question, options: sanitizedOptions, timer });
 
-    console.log(`Question added to poll ${pollId}:`, question);
+    // console.log(`Question added to poll ${pollId}:`, question);
   });
 
   // ========================
@@ -127,7 +129,12 @@ io.on('connection', (socket) => {
     socket.join(pollId);
     socket.emit('joined', { pollId, name });
     io.to(pollId).emit('student-joined', { name });
-
+    if (activePolls[pollId].lastQuestionActive) {
+      const { question, options, askedAt, timer } = activePolls[pollId].questions[activePolls[pollId].currentQuestionIndex];
+      const sanitizedOptions = options.map(opt => ({ text: opt.text }));
+      // console.log(sanitizedOptions);
+      socket.emit('new-question', { question, options: sanitizedOptions, timer: Math.floor(60 - ((Date.now() - askedAt) / 1000)) });
+    }
     console.log(`Student ${name} joined poll ${pollId}`);
   });
 
@@ -157,7 +164,7 @@ io.on('connection', (socket) => {
 
     // Send update to all students
     io.to(pollId).emit('vote-update', question.options.map(opt => ({
-      text: opt.value,
+      text: opt.text,
       percentage: (opt.voted / totalVotes) * 100
     })));
 
@@ -169,7 +176,7 @@ io.on('connection', (socket) => {
     if (allVoted) {
       poll.lastQuestionActive = false;
       io.to(pollId).emit('question-ended', question.options.map(opt => ({
-        value: opt.value,
+        text: opt.text,
         voted: opt.voted
       })));
     }
