@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 // Define the available time options in seconds
-const timeOptions = [30, 60, 90, 120];
+const timeOptions = [15, 30, 45, 60];
 
 function TimerSelect({ value, onChange }) {
     const [isOpen, setIsOpen] = useState(false);
