@@ -30,7 +30,7 @@ export default function Poll({
 
   return (
     <div className="max-w-md mx-auto mt-10 p-4 border rounded shadow bg-white">
-      {remainingTime > 0 ? (
+      {timer && (remainingTime > 0 ? (
         <span className="text-sm bg-purple-600 text-white px-2 py-1 rounded">
           ⏱ {remainingTime}s
         </span>
@@ -38,7 +38,7 @@ export default function Poll({
         <span className="text-sm bg-red-600 text-white px-2 py-1 rounded">
           ⏳ Time’s up
         </span>
-      )}
+      ))}
       <div className="bg-gray-700 text-white px-3 py-2 rounded-t mt-3">
         {question}
       </div>

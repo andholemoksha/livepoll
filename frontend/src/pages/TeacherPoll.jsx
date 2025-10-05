@@ -26,9 +26,17 @@ export default function TeacherPoll() {
     console.log("Vote update received:", options);
     setPollQuestion((prev) => ({ ...prev, options }));
   });
-  socket.on("question-ended", ({ question }) => {
+  socket.on("question-ended-time", ({ question }) => {
     console.log("Question ended:", question);
     setActive(false);
+  });
+  socket.on("question-ended-voted", ({ question }) => {
+    console.log("Question ended:", question);
+    setActive(false);
+  });
+
+  socket.on("history", (history) => {
+    console.log(history);
   });
 
   const askNewQuestion = () => {
@@ -38,18 +46,18 @@ export default function TeacherPoll() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center relative">
       {/* View Poll History button at top-right */}
-      <button className="absolute top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 flex items-center gap-1">
+      <button className="absolute top-4 right-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 flex items-center gap-1" onClick={()=>socket.emit("history", {})}>
         <span>👁️</span> View Poll History
       </button>
 
       {/* Centered Poll */}
-      
-        <Poll
-          question={pollQuestion.question}
-          options={pollQuestion.options}
-          timer={pollQuestion.timer}
-          readOnly={true}  
-        />
+
+      <Poll
+        question={pollQuestion.question}
+        options={pollQuestion.options}
+        timer={pollQuestion.timer}
+        readOnly={true}
+      />
 
       {/* Add New Question button just below poll, aligned right */}
       <div className="w-full max-w-md flex justify-end mt-4">
