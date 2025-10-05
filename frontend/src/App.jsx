@@ -9,6 +9,7 @@ import TeacherStart from "./pages/TeacherStart";
 import TeacherPoll from "./pages/TeacherPoll";
 import StudentStart from "./pages/StudentStart";
 import StudentPoll from "./pages/StudentPoll";
+import StudentKicked from "./pages/StudentKicked";
 
 function App() {
   return (
@@ -21,16 +22,7 @@ function App() {
         <Route path="/student/poll" element={<StudentPoll />} />
         <Route
           path="/student/kicked"
-          element={
-            <>
-              <div className="p-4 text-center text-[2rem] font-bold">
-                You have been kicked out of the poll.
-              </div>
-              <div className="p-2 text-center text-[1.5rem] font-bold">
-                Looks like the teacher had removed you from the poll system. Please Try again sometime.
-              </div>
-            </>
-          }
+          element={<StudentKicked/>}
         />
       </Routes>
     </BrowserRouter>
