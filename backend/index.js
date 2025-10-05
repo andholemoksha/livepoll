@@ -225,7 +225,11 @@ io.on('connection', (socket) => {
     //io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
     delete activePollStudents[studentId];
     const targetSocket = io.sockets.sockets.get(studentId);
-    if (targetSocket) targetSocket.leave(activePollId);
+
+    if (targetSocket) {
+      targetSocket.emit('kicked', {message: 'You have been kicked out of the poll'});
+      targetSocket.leave(activePollId); 
+    }
     delete activePolls[activePollId]?.students[studentId];
     const students = Object.entries(activePolls[activePollId]?.students || {}).map(
       ([id, student]) => ({
