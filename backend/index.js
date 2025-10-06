@@ -6,16 +6,22 @@ const fs = require('fs');
 const { randomUUID } = require('crypto');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: ["https://livepoll-frontend-osvf.onrender.com","https://iridescent-yeot-138a8f.netlify.app/"] ,// React frontend
+app.use(cors({
+    origin: ["https://livepoll-frontend-osvf.onrender.com", "https://iridescent-yeot-138a8f.netlify.app/", "http://localhost:5173"],
     methods: ["GET", "POST"]
-  }
+}));
+app.use(express.json());
+const PORT = process.env.PORT || 3000;
+const server = app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
 });
 
-app.use(express.json());
-app.use(cors());
+const io = new Server(server, {
+    cors: {
+        origin: ["https://livepoll-frontend-osvf.onrender.com", "https://iridescent-yeot-138a8f.netlify.app/", "http://localhost:5173"],
+        methods: ["GET", "POST"]
+    }
+});
 
 // ----------------------
 // In-Memory Structures
@@ -29,273 +35,273 @@ let activePollId = '';        // current active pollId
 // Socket.IO Logic
 // ----------------------
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-  socket.emit('connected', { socketId: socket.id });
+    console.log('A user connected:', socket.id);
+    socket.emit('connected', { socketId: socket.id });
 
-  // ========================
-  // Create Poll (Teacher)
-  // ========================
-  socket.on('create-poll', () => {
-    // If there’s an existing poll, close it first
-    if (activePollId && activePolls[activePollId]) {
-      console.log(`Closing previous poll ${activePollId}`);
-      delete activePolls[activePollId];
-    }
+    // ========================
+    // Create Poll (Teacher)
+    // ========================
+    socket.on('create-poll', () => {
+        // If there’s an existing poll, close it first
+        if (activePollId && activePolls[activePollId]) {
+            console.log(`Closing previous poll ${activePollId}`);
+            delete activePolls[activePollId];
+        }
 
-    const pollId = randomUUID();
+        const pollId = randomUUID();
 
-    activePolls[pollId] = {
-      students: {},
-      questions: [],
-      currentQuestionIndex: -1,
-      lastQuestionActive: false
-    };
+        activePolls[pollId] = {
+            students: {},
+            questions: [],
+            currentQuestionIndex: -1,
+            lastQuestionActive: false
+        };
 
-    activePollTeachers[socket.id] = pollId;
-    activePollId = pollId;
+        activePollTeachers[socket.id] = pollId;
+        activePollId = pollId;
 
-    socket.join(pollId);
-    socket.emit('joined', { pollId });
+        socket.join(pollId);
+        socket.emit('joined', { pollId });
 
-    console.log(`Teacher created poll ${pollId}`);
-  });
-
-  // ========================
-  // Add Question
-  // ========================
-  socket.on("add-question", ({ question, options, timer = 5 }) => {
-    const pollId = activePollId;
-    if (!pollId || !activePolls[pollId]) return socket.emit("error", "No active poll");
-
-    const poll = activePolls[pollId];
-
-    // ✅ Stop any existing timer before starting a new one
-    if (poll.timerInterval) {
-      clearInterval(poll.timerInterval);
-      poll.timerInterval = null;
-    }
-
-    const newQuestion = {
-      question,
-      options: options.map((opt) => ({ ...opt, voted: 0 })),
-      askedAt: Date.now(),
-      timer,
-      votedBy: {},
-    };
-
-    poll.questions.push(newQuestion);
-    poll.currentQuestionIndex += 1;
-    poll.lastQuestionActive = true;
-
-    const currentIndex = poll.currentQuestionIndex;
-
-    // ✅ Start the new timer interval
-    poll.timerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - newQuestion.askedAt) / 1000);
-      const timeLeft = Math.max(0, timer - elapsed);
-
-      io.to(pollId).emit("time-left", { timeLeft });
-
-      // Auto-stop if time runs out (in case setTimeout didn’t trigger yet)
-      if (timeLeft <= 0) {
-        clearInterval(poll.timerInterval);
-        poll.timerInterval = null;
-      }
-    }, 1000);
-
-    // ✅ Auto-end question after timer expires
-    setTimeout(() => {
-      if (!poll.lastQuestionActive) return; // already ended by votes
-      poll.lastQuestionActive = false;
-
-      if (poll.timerInterval) {
-        clearInterval(poll.timerInterval);
-        poll.timerInterval = null;
-      }
-
-      io.to(pollId).emit("question-ended-time", poll.questions[currentIndex]);
-      console.log("⏰ Question ended by time");
-    }, timer * 1000);
-
-    const sanitizedOptions = options.map((opt) => ({ text: opt.text }));
-    io.to(pollId).emit("new-question", { question, options: sanitizedOptions, timer });
-
-    console.log(`✅ New question added to poll ${pollId}:`, question);
-  });
-
-  // ========================
-  // Student Joins Poll
-  // ========================
-  socket.on('join-poll', ({ name }) => {
-    const pollId = activePollId;
-    if (!pollId || !activePolls[pollId]) return socket.emit('error', 'No active poll available');
-
-    activePolls[pollId].students[socket.id] = { name };
-    activePollStudents[socket.id] = pollId;
-
-    socket.join(pollId);
-    socket.emit('joined', { pollId, name });
-    io.to(pollId).emit('student-joined', { name });
-    if (activePolls[pollId].lastQuestionActive) {
-      const { question, options, askedAt, timer } = activePolls[pollId].questions[activePolls[pollId].currentQuestionIndex];
-      const sanitizedOptions = options.map(opt => ({ text: opt.text }));
-      // console.log(sanitizedOptions);
-      socket.emit('new-question', { question, options: sanitizedOptions, timer: Math.floor(60 - ((Date.now() - askedAt) / 1000)) });
-    }
-    const students = Object.entries(activePolls[activePollId]?.students || {}).map(
-      ([id, student]) => ({
-        id,
-        name: student.name,
-      })
-    );
-    console.log(students);
-    io.to(pollId).emit('participants', { students });
-    console.log(`Student ${name} joined poll ${pollId}`);
-  });
-
-  // ========================
-  // Student Votes
-  // ========================
-  socket.on("vote", ({ optionIndex }) => {
-    const pollId = activePollStudents[socket.id];
-    if (!pollId || !activePolls[pollId]) return socket.emit('error', 'Poll not found');
-
-    const poll = activePolls[pollId];
-    const question = poll.questions[poll.currentQuestionIndex];
-
-    if (!poll.lastQuestionActive) return socket.emit('error', 'No active question');
-    if (optionIndex < 0 || optionIndex >= question.options.length)
-      return socket.emit('error', 'Invalid option');
-
-    if (!question.votedBy) question.votedBy = {};
-
-    if (question.votedBy[socket.id])
-      return socket.emit('error', 'You have already voted for this question');
-
-    question.options[optionIndex].voted += 1;
-    question.votedBy[socket.id] = true;
-
-    const totalVotes = Object.keys(question.votedBy).length;
-    io.to(pollId).emit("vote-update", {
-      options: question.options.map((opt) => ({
-        id: opt.id,
-        text: opt.text,
-        voted: opt.voted || 0,
-        percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0,
-      })),
+        console.log(`Teacher created poll ${pollId}`);
     });
 
-    // Check if all students voted
-    const allVoted = Object.keys(poll.students || {}).every(
-      (studentId) => question.votedBy[studentId]
-    );
+    // ========================
+    // Add Question
+    // ========================
+    socket.on("add-question", ({ question, options, timer = 5 }) => {
+        const pollId = activePollId;
+        if (!pollId || !activePolls[pollId]) return socket.emit("error", "No active poll");
 
-    console.log("Number of students:", Object.keys(poll.students || {}).length);
-    console.log("All voted:", allVoted);
+        const poll = activePolls[pollId];
 
-    if (allVoted) {
-      poll.lastQuestionActive = false;
+        // ✅ Stop any existing timer before starting a new one
+        if (poll.timerInterval) {
+            clearInterval(poll.timerInterval);
+            poll.timerInterval = null;
+        }
 
-      // ✅ Clear the running timer interval
-      if (poll.timerInterval) {
-        clearInterval(poll.timerInterval);
-        poll.timerInterval = null;
-      }
+        const newQuestion = {
+            question,
+            options: options.map((opt) => ({ ...opt, voted: 0 })),
+            askedAt: Date.now(),
+            timer,
+            votedBy: {},
+        };
 
-      io.to(pollId).emit("question-ended-voted", poll.questions[poll.currentQuestionIndex]);
-    }
-  });
+        poll.questions.push(newQuestion);
+        poll.currentQuestionIndex += 1;
+        poll.lastQuestionActive = true;
 
+        const currentIndex = poll.currentQuestionIndex;
 
-  // ========================
-  // Chat Message
-  // ========================
-  socket.on('chat-message', ({ message }) => {
-    if (!activePollId || !activePolls[activePollId]) return socket.emit('error', 'Poll not found');
+        // ✅ Start the new timer interval
+        poll.timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - newQuestion.askedAt) / 1000);
+            const timeLeft = Math.max(0, timer - elapsed);
 
-    io.to(activePollId).emit('chat-message', { message, sender: activePolls[activePollId].students[socket.id]?.name || 'Teacher' ,senderId:socket.id});
-  });
+            io.to(pollId).emit("time-left", { timeLeft });
 
-  // ========================
-  // Teacher Kickout any student
-  // ========================
-  socket.on('kick-student', ({ studentId }) => {
+            // Auto-stop if time runs out (in case setTimeout didn’t trigger yet)
+            if (timeLeft <= 0) {
+                clearInterval(poll.timerInterval);
+                poll.timerInterval = null;
+            }
+        }, 1000);
 
-    //if (studentId in activePolls[activePollId].students) {
-    //io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
-    delete activePollStudents[studentId];
-    const targetSocket = io.sockets.sockets.get(studentId);
+        // ✅ Auto-end question after timer expires
+        setTimeout(() => {
+            if (!poll.lastQuestionActive) return; // already ended by votes
+            poll.lastQuestionActive = false;
 
-    if (targetSocket) {
-      targetSocket.emit('kicked', {message: 'You have been kicked out of the poll'});
-      targetSocket.leave(activePollId); 
-    }
-    delete activePolls[activePollId]?.students[studentId];
-    const students = Object.entries(activePolls[activePollId]?.students || {}).map(
-      ([id, student]) => ({
-        id,
-        name: student.name,
-      })
-    );
-    console.log(students);
-    io.to(activePollId).emit('participants', { students });
-    //}
-  });
+            if (poll.timerInterval) {
+                clearInterval(poll.timerInterval);
+                poll.timerInterval = null;
+            }
 
-  // ========================
-  // participants
-  // ========================
-  socket.on('get-participants', () => {
-    const students = Object.entries(activePolls[activePollId]?.students || {}).map(
-      ([id, student]) => ({
-        id,
-        name: student.name,
-      })
-    );
-    console.log(students);
-    socket.emit('participants', { students });
-  });
+            io.to(pollId).emit("question-ended-time", poll.questions[currentIndex]);
+            console.log("⏰ Question ended by time");
+        }, timer * 1000);
 
-  // ========================
-  // Teacher Disconnect
-  // ========================
-  socket.on('history', () => {
-    const questions = activePolls[activePollId]?.questions;
-    questions.forEach(q => {
-      const totalVotes = Object.keys(q.votedBy || {}).length;
-      q.options = q.options.map(opt => ({
-        text: opt.text,
-        voted: opt.voted || 0,
-        percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0
-      }));
+        const sanitizedOptions = options.map((opt) => ({ text: opt.text }));
+        io.to(pollId).emit("new-question", { question, options: sanitizedOptions, timer });
+
+        console.log(`✅ New question added to poll ${pollId}:`, question);
     });
-    socket.emit('history', questions || []);
-    console.log(questions)
-  });
 
-  // ========================
-  // Teacher Disconnect
-  // ========================
-  socket.on('disconnect', () => {
-    const pollId = activePollTeachers[socket.id];
-    if (pollId && activePolls[pollId]) {
-      console.log(`Teacher disconnected. Ending poll ${pollId}`);
-      delete activePolls[pollId];
-      activePollId = '';
-      io.to(pollId).emit('poll-ended');
-    }
-    delete activePollTeachers[socket.id];
-    delete activePollStudents[socket.id];
-  });
+    // ========================
+    // Student Joins Poll
+    // ========================
+    socket.on('join-poll', ({ name }) => {
+        const pollId = activePollId;
+        if (!pollId || !activePolls[pollId]) return socket.emit('error', 'No active poll available');
 
-  // Debug logging
-  socket.onAny((event, data) => {
-    console.log(`Event: ${event}, Data: ${JSON.stringify(data)}`);
-  });
+        activePolls[pollId].students[socket.id] = { name };
+        activePollStudents[socket.id] = pollId;
+
+        socket.join(pollId);
+        socket.emit('joined', { pollId, name });
+        io.to(pollId).emit('student-joined', { name });
+        if (activePolls[pollId].lastQuestionActive) {
+            const { question, options, askedAt, timer } = activePolls[pollId].questions[activePolls[pollId].currentQuestionIndex];
+            const sanitizedOptions = options.map(opt => ({ text: opt.text }));
+            // console.log(sanitizedOptions);
+            socket.emit('new-question', { question, options: sanitizedOptions, timer: Math.floor(60 - ((Date.now() - askedAt) / 1000)) });
+        }
+        const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+            ([id, student]) => ({
+                id,
+                name: student.name,
+            })
+        );
+        console.log(students);
+        io.to(pollId).emit('participants', { students });
+        console.log(`Student ${name} joined poll ${pollId}`);
+    });
+
+    // ========================
+    // Student Votes
+    // ========================
+    socket.on("vote", ({ optionIndex }) => {
+        const pollId = activePollStudents[socket.id];
+        if (!pollId || !activePolls[pollId]) return socket.emit('error', 'Poll not found');
+
+        const poll = activePolls[pollId];
+        const question = poll.questions[poll.currentQuestionIndex];
+
+        if (!poll.lastQuestionActive) return socket.emit('error', 'No active question');
+        if (optionIndex < 0 || optionIndex >= question.options.length)
+            return socket.emit('error', 'Invalid option');
+
+        if (!question.votedBy) question.votedBy = {};
+
+        if (question.votedBy[socket.id])
+            return socket.emit('error', 'You have already voted for this question');
+
+        question.options[optionIndex].voted += 1;
+        question.votedBy[socket.id] = true;
+
+        const totalVotes = Object.keys(question.votedBy).length;
+        io.to(pollId).emit("vote-update", {
+            options: question.options.map((opt) => ({
+                id: opt.id,
+                text: opt.text,
+                voted: opt.voted || 0,
+                percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0,
+            })),
+        });
+
+        // Check if all students voted
+        const allVoted = Object.keys(poll.students || {}).every(
+            (studentId) => question.votedBy[studentId]
+        );
+
+        console.log("Number of students:", Object.keys(poll.students || {}).length);
+        console.log("All voted:", allVoted);
+
+        if (allVoted) {
+            poll.lastQuestionActive = false;
+
+            // ✅ Clear the running timer interval
+            if (poll.timerInterval) {
+                clearInterval(poll.timerInterval);
+                poll.timerInterval = null;
+            }
+
+            io.to(pollId).emit("question-ended-voted", poll.questions[poll.currentQuestionIndex]);
+        }
+    });
+
+
+    // ========================
+    // Chat Message
+    // ========================
+    socket.on('chat-message', ({ message }) => {
+        if (!activePollId || !activePolls[activePollId]) return socket.emit('error', 'Poll not found');
+
+        io.to(activePollId).emit('chat-message', { message, sender: activePolls[activePollId].students[socket.id]?.name || 'Teacher', senderId: socket.id });
+    });
+
+    // ========================
+    // Teacher Kickout any student
+    // ========================
+    socket.on('kick-student', ({ studentId }) => {
+
+        //if (studentId in activePolls[activePollId].students) {
+        //io.to(studentId).emit('kicked', 'You have been kicked out of the poll');
+        delete activePollStudents[studentId];
+        const targetSocket = io.sockets.sockets.get(studentId);
+
+        if (targetSocket) {
+            targetSocket.emit('kicked', { message: 'You have been kicked out of the poll' });
+            targetSocket.leave(activePollId);
+        }
+        delete activePolls[activePollId]?.students[studentId];
+        const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+            ([id, student]) => ({
+                id,
+                name: student.name,
+            })
+        );
+        console.log(students);
+        io.to(activePollId).emit('participants', { students });
+        //}
+    });
+
+    // ========================
+    // participants
+    // ========================
+    socket.on('get-participants', () => {
+        const students = Object.entries(activePolls[activePollId]?.students || {}).map(
+            ([id, student]) => ({
+                id,
+                name: student.name,
+            })
+        );
+        console.log(students);
+        socket.emit('participants', { students });
+    });
+
+    // ========================
+    // Teacher Disconnect
+    // ========================
+    socket.on('history', () => {
+        const questions = activePolls[activePollId]?.questions;
+        questions.forEach(q => {
+            const totalVotes = Object.keys(q.votedBy || {}).length;
+            q.options = q.options.map(opt => ({
+                text: opt.text,
+                voted: opt.voted || 0,
+                percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0
+            }));
+        });
+        socket.emit('history', questions || []);
+        console.log(questions)
+    });
+
+    // ========================
+    // Teacher Disconnect
+    // ========================
+    socket.on('disconnect', () => {
+        const pollId = activePollTeachers[socket.id];
+        if (pollId && activePolls[pollId]) {
+            console.log(`Teacher disconnected. Ending poll ${pollId}`);
+            delete activePolls[pollId];
+            activePollId = '';
+            io.to(pollId).emit('poll-ended');
+        }
+        delete activePollTeachers[socket.id];
+        delete activePollStudents[socket.id];
+    });
+
+    // Debug logging
+    socket.onAny((event, data) => {
+        console.log(`Event: ${event}, Data: ${JSON.stringify(data)}`);
+    });
 });
 
 // ----------------------
 // Server Start
 // ----------------------
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
+// server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
