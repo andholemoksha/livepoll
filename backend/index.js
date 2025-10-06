@@ -9,7 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*" ,// React frontend
+    origin: ["https://livepoll-frontend-osvf.onrender.com","https://iridescent-yeot-138a8f.netlify.app/"] ,// React frontend
     methods: ["GET", "POST"]
   }
 });
