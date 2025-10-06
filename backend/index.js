@@ -17,10 +17,12 @@ const server = app.listen(PORT, () => {
 });
 
 const io = new Server(server, {
+    transports: ['websocket', 'polling'],
     cors: {
         origin: ["https://livepoll-frontend-osvf.onrender.com", "https://iridescent-yeot-138a8f.netlify.app/", "http://localhost:5173"],
         methods: ["GET", "POST"]
-    }
+    },
+    
 });
 
 // ----------------------
