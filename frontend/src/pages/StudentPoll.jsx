@@ -13,11 +13,15 @@ export default function StudentPoll() {
 
   const [activeTab, setActiveTab] = useState("Chat");
   const [showChatPanel, setShowChatPanel] = useState(false);
+  const [messages, setMessages] = useState([]);
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [active, setActive] = useState(false);
   const navigate = useNavigate();
+  const [correctOption, setCorrectOption] = useState(null);
+  const [participants, setParticipants] = useState([]);
+
   const [pollQuestion, setPollQuestion] = useState({
     question: "",
     options: null,
@@ -34,6 +38,7 @@ export default function StudentPoll() {
       setSubmitted(false);
       setActive(true);
       setSelectedOption(null);
+      setCorrectOption(null);
     };
 
     const handleVoteUpdate = ({ options }) => {
@@ -41,33 +46,52 @@ export default function StudentPoll() {
       setPollQuestion((prev) => ({ ...prev, options }));
     };
 
-    const handleQuestionEndedTime = ({ question }) => {
-      console.log("⏰ Question ended (time):", question);
+    const handleQuestionEndedTime = ({ option }) => {
+      console.log("⏰ Correct option (time):", option);
+      setCorrectOption(option);
       setActive(false);
     };
 
-    const handleQuestionEndedVoted = ({ question }) => {
-      console.log("🔴 Question ended (voted):", question);
+    const handleQuestionEndedVoted = ({ option }) => {
+      console.log("🔴 Correct option (voted):", option);
+      setCorrectOption(option);
       setActive(false);
     };
     const handleKicked = ({ message }) => {
       console.log("🔴 Kicked:", message);
       navigate("/student/kicked"); // Redirect to home or login page
     };
+    const handleParticipants = ({ students }) => {
+      console.log("Participant List:", students);
+      setParticipants(students);
+    };
 
+    const handleMessage = ({ message, sender, senderId }) => {
+      if (senderId !== socket.id) {
+        setMessages((prev) => [
+          ...prev,
+          { text: message, user: sender, side: "left" },
+        ]);
+      }
+    };
+
+    socket.on("chat-message", handleMessage);
     socket.on("new-question", handleNewQuestion);
     socket.on("vote-update", handleVoteUpdate);
     socket.on("question-ended-time", handleQuestionEndedTime);
     socket.on("question-ended-voted", handleQuestionEndedVoted);
     socket.on("kicked", handleKicked);
+    socket.on("participants", handleParticipants);
 
     // Cleanup listeners on unmount
     return () => {
       socket.off("new-question", handleNewQuestion);
+      socket.off("chat-message", handleMessage);
       socket.off("vote-update", handleVoteUpdate);
       socket.off("question-ended-time", handleQuestionEndedTime);
       socket.off("question-ended-voted", handleQuestionEndedVoted);
       socket.off("kicked", handleKicked);
+      socket.off("participants", handleParticipants);
     };
   }, [socket]);
 
@@ -92,14 +116,15 @@ export default function StudentPoll() {
               submitted
                 ? pollQuestion.options // show with vote counts
                 : pollQuestion.options.map((opt) => ({
-                  text: opt.text,
-                  id: opt.id,
-                }))
+                    text: opt.text,
+                    id: opt.id,
+                  }))
             }
             timer={active ? pollQuestion.timer : null}
             setIndex={setSelectedOption}
             selectedIndex={selectedOption}
             readOnly={submitted}
+            correctOption={correctOption}
           />
 
           {!submitted && <Button text="Submit" onClick={handleSubmit} />}
@@ -124,7 +149,7 @@ export default function StudentPoll() {
       </button>
       {/* Chat/Participants Modal */}
       {showChatPanel && (
-        <div className="fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-200 animate-slide-up">
+        <div className=" z-50 fixed bottom-20 right-6 w-80 bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-200 animate-slide-up">
           {/* Header Tabs */}
           <div className="flex justify-between items-center border-b border-gray-300">
             <TabPanel
@@ -142,11 +167,9 @@ export default function StudentPoll() {
 
           {/* Tab Content */}
           {activeTab === "Chat" ? (
-            <ChatBox />
+            <ChatBox messages={messages} setMessages={setMessages} />
           ) : (
-
             <ParticipantsList participants={participants} role="student" />
-
           )}
         </div>
       )}

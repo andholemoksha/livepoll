@@ -1,11 +1,13 @@
 // src/socket.ts
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = process.env.SOCKET_URL || "http://localhost:3000"; // your backend server
-
-// Create a singleton socket instance
-const socket = io(SOCKET_URL, {
-  autoConnect: false, // manually control when to connect
+const socket = io("https://livepoll-t3vr.onrender.com/", {
+  transports: ['websocket'],
+  withCredentials: true,
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
 });
+
 
 export default socket;

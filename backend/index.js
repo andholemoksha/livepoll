@@ -1,18 +1,24 @@
 const express = require('express');
-const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const { randomUUID } = require('crypto');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*" ,// React frontend
-    methods: ["GET", "POST"]
-  }
+
+const port = process.env.PORT || 3000;
+
+const server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });
+
+const io = require("socket.io")(server, {
+    cors: {
+        origin: "http://livepoll.umeshkumar.xyz",
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+})
 
 app.use(express.json());
 app.use(cors());
@@ -23,8 +29,13 @@ app.use(cors());
 let activePolls = {};         // all polls (only one at a time)
 let activePollTeachers = {};  // teacher socket -> pollId
 let activePollStudents = {};  // student socket -> pollId
-let activePollId = '';        // current active pollId
-
+let activePollId = 'povmsifvf-vgfgb-fbgdf-fdg';        // current active pollId
+activePolls[activePollId] = {
+      students: {},
+      questions: [],
+      currentQuestionIndex: -1,
+      lastQuestionActive: false
+    };
 // ----------------------
 // Socket.IO Logic
 // ----------------------
@@ -37,15 +48,15 @@ io.on('connection', (socket) => {
   // ========================
   socket.on('create-poll', () => {
     // If there’s an existing poll, close it first
-    if (activePollId && activePolls[activePollId]) {
-      console.log(`Closing previous poll ${activePollId}`);
-      delete activePolls[activePollId];
-    }
+    // if (activePollId && activePolls[activePollId]) {
+    //   // console.log(`Closing previous poll ${activePollId}`);
+    //   delete activePolls[activePollId];
+    // }
 
-    const pollId = randomUUID();
-
+    const pollId = activePollId;
+    const studentsPast = activePolls[pollId].students;
     activePolls[pollId] = {
-      students: {},
+      students: studentsPast,
       questions: [],
       currentQuestionIndex: -1,
       lastQuestionActive: false
@@ -56,7 +67,6 @@ io.on('connection', (socket) => {
 
     socket.join(pollId);
     socket.emit('joined', { pollId });
-
     console.log(`Teacher created poll ${pollId}`);
   });
 
@@ -112,8 +122,10 @@ io.on('connection', (socket) => {
         clearInterval(poll.timerInterval);
         poll.timerInterval = null;
       }
-
-      io.to(pollId).emit("question-ended-time", poll.questions[currentIndex]);
+        
+      let correctOptionIndex = options.findIndex(opt => opt.isCorrect);
+        console.log(correctOptionIndex);
+      io.to(pollId).emit("question-ended-time", {option:correctOptionIndex});
       console.log("⏰ Question ended by time");
     }, timer * 1000);
 
@@ -202,7 +214,9 @@ io.on('connection', (socket) => {
         poll.timerInterval = null;
       }
 
-      io.to(pollId).emit("question-ended-voted", poll.questions[poll.currentQuestionIndex]);
+      let correctOptionIndex = question.options.findIndex(opt => opt.isCorrect);
+        console.log(correctOptionIndex);
+      io.to(pollId).emit("question-ended-voted", {option:correctOptionIndex});
     }
   });
 
@@ -268,6 +282,8 @@ io.on('connection', (socket) => {
         voted: opt.voted || 0,
         percentage: totalVotes > 0 ? ((opt.voted / totalVotes) * 100).toFixed(2) : 0
       }));
+        let correctOptionIndex = q.options.findIndex(opt => opt.isCorrect);
+        q.correct = correctOptionIndex;
     });
     socket.emit('history', questions || []);
     console.log(questions)
@@ -287,15 +303,4 @@ io.on('connection', (socket) => {
     delete activePollTeachers[socket.id];
     delete activePollStudents[socket.id];
   });
-
-  // Debug logging
-  socket.onAny((event, data) => {
-    console.log(`Event: ${event}, Data: ${JSON.stringify(data)}`);
-  });
 });
-
-// ----------------------
-// Server Start
-// ----------------------
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, {  useState } from "react";
 import { Send } from "lucide-react";
 import { useSocket } from "../server/useSocket";
 
-const ChatBox = () => {
-  const [messages, setMessages] = useState([]);
+const ChatBox = ({messages, setMessages}) => {
   const [input, setInput] = useState("");
   const socket = useSocket();
 
@@ -25,16 +24,7 @@ const ChatBox = () => {
     // Clear input
     setInput("");
   };
-  useEffect(()=>{
-    socket.on("chat-message", handleMessage);
-    return ()=> socket.off("chat-message", handleMessage);
-  },[])
-  const handleMessage = ({message,sender,senderId})=>{
-    if(senderId !== socket.id){
-      setMessages((prev)=>[...prev, {text:message,user:sender,side:"left"}])
-    }
-  }
-
+  
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSend();
@@ -42,7 +32,7 @@ const ChatBox = () => {
   };
 
   return (
-    <div className="flex flex-col h-72 bg-white">
+    <div className="flex flex-col h-72 bg-white z-50">
       {/* Chat messages */}
       <div className="flex-1 p-4 overflow-y-auto">
         {messages.map((msg, index) => (

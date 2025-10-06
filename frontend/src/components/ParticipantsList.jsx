@@ -1,11 +1,11 @@
-import React, { useEffect } from "react";
+import React from "react";
 const ParticipantsList = ({
   participants,
   onKick,
   role = "teacher"
 }) => {
   return (
-    <div className="p-4 bg-white h-64 overflow-y-auto">
+    <div className="p-4 bg-white h-64 overflow-y-auto z-50">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left border-b border-gray-300">
